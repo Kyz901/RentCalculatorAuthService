@@ -6,7 +6,6 @@ import com.authservice.model.User;
 import com.authservice.model.UserRole;
 import com.authservice.repository.UserRepository;
 import com.authservice.repository.UserRoleRepository;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
