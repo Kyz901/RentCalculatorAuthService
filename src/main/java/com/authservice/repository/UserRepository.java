@@ -54,7 +54,7 @@ public class UserRepository {
         final MapSqlParameterSource parameters = new MapSqlParameterSource()
                 .addValue("login", login);
 
-        return operations.queryForObject(sql, parameters, (rs, rowNum) -> new User()
+        final List<User> users = operations.query(sql, parameters, (rs, rowNum) -> new User()
             .setId(rs.getLong("id"))
             .setFirstName(rs.getString("first_name"))
             .setSecondName(rs.getString("second_name"))
@@ -62,12 +62,22 @@ public class UserRepository {
             .setLogin(rs.getString("login"))
             .setHasPrivileges(rs.getBoolean("has_privileges"))
             .setRole(new UserRole()
-                    .setId(rs.getInt("role_id"))
-                    .setName(rs.getString("role_name")))
+                .setId(rs.getInt("role_id"))
+                .setName(rs.getString("role_name")))
             .setPassword(rs.getString("password"))
             .setDeleted(rs.getBoolean("is_deleted"))
             .setActive(rs.getBoolean("is_active"))
         );
+
+        if (users.isEmpty()) {
+            // Handle the case when no user is found
+            return null;
+        } else if (users.size() > 1) {
+            // Handle the case when multiple users are found
+            throw new IllegalStateException("Multiple users found for login: " + login);
+        }
+
+        return users.get(0);
     }
 
     public User fetchUserById(final Long userId) {

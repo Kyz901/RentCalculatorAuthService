@@ -1,29 +1,31 @@
 package com.authservice.service;
 
+import com.authservice.exceptions.NameDuplicateException;
 import com.authservice.model.AuthenticatedAccount;
 import com.authservice.model.User;
 import com.authservice.model.UserRole;
 import com.authservice.repository.UserRepository;
 import com.authservice.repository.UserRoleRepository;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 import static com.authservice.model.RoleEnum.USER_ROLE;
-
 
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
     private final UserRoleRepository userRoleRepository;
-    private final BCryptPasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
 
     public UserService(
         final UserRepository userRepository,
         final UserRoleRepository userRoleRepository,
-        final BCryptPasswordEncoder passwordEncoder
+        final PasswordEncoder passwordEncoder
     ) {
         this.userRepository = userRepository;
         this.userRoleRepository = userRoleRepository;
@@ -31,12 +33,17 @@ public class UserService {
     }
 
     public User register(final User user) {
+        Optional.ofNullable(userRepository.fetchUserByLogin(user.getLogin()))
+            .ifPresent(existingUser -> {
+                throw new NameDuplicateException("Login '" + user.getLogin() + "' already in use");
+            });
+
         final UserRole userRole = userRoleRepository.fetchRoleByName(USER_ROLE);
 
-        final long createdUserId = userRepository.createUser(user
-            .setPassword(user.getPassword()) //todo: encoder
-//            .setPassword(passwordEncoder.encode(user.getPassword()))
-            .setRole(userRole)
+        final long createdUserId = userRepository
+            .createUser(user
+                .setPassword(passwordEncoder.encode(user.getPassword()))
+                .setRole(userRole)
         );
 
         return userRepository.fetchUserById(createdUserId);
@@ -47,7 +54,7 @@ public class UserService {
     }
 
     public boolean isValidPassword(final User authUser, final User existedUser) {
-        return existedUser.getPassword().equals(authUser.getPassword());
+       return passwordEncoder.matches(authUser.getPassword(), existedUser.getPassword());
     }
 
     public User findById(final Long userId) {

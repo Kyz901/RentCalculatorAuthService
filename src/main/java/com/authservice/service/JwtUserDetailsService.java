@@ -19,7 +19,7 @@ public class JwtUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String login) throws UsernameNotFoundException {
-        final User user = userService.findByLogin(login); //todo: load by token
+        final User user = userService.findByLogin(login);
         if(user == null) {
             throw new UsernameNotFoundException("User with login: " + login + " not found");
         }
